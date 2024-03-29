@@ -8,7 +8,7 @@ import threading
 
 def main():
     has_more_page = True
-    limit = 4750
+    limit = 7500
 
     connection_params = {
         "host": "localhost",
@@ -110,7 +110,7 @@ def parse_element(title, headers, animes):
         anime["image"] = img_src
 
     if anime["image"] == None:
-        anime["image"] = f'https://placehold.co/600x400?text={title}'
+        anime["image"] = f'https://placehold.co/600x400?text={anime["title"]}'
 
     spaceit_pad_divs = sub_element.find_all("div", class_="spaceit_pad")
 
