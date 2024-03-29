@@ -8,7 +8,7 @@ import threading
 
 def main():
     has_more_page = True
-    limit = 7500
+    limit = 0
 
     connection_params = {
         "host": "localhost",
@@ -18,7 +18,7 @@ def main():
     }
 
     insert_query = """
-                        INSERT INTO animes (title, link, image, genres, episodes, studios, status) 
+                        INSERT INTO animes (title, rank, link, image, genres, episodes, studios, status) 
                         VALUES %s
                         ON CONFLICT (title) DO UPDATE
                         SET link = EXCLUDED.link,
@@ -38,7 +38,7 @@ def main():
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-                'Cookie': 'MALHLOGSESSID=1c7e8d5d7e89b2f4d1c5c11dc369191b; usprivacy=1NNY; m_gdpr_mdl_20230227=1; MALSESSIONID=2f9ot8fgp80j2c95v03fgbvtu3; is_logged_in=1; aws-waf-token=502bd38a-5d7f-4e66-8898-e52d5b513580:CQoAiOpGM5gJAAAA:AjpNjJoiRXoS3JYet1bNBskgXANK5hhX3sj4NL77hWvM2sQ6rjojrSv8IekkxGw4AXbIevhq9idu6FRR2RyDod8EFdqrHhtRqcRBNgDSLzVE0m+1UzIYr5FnTxrfpX3CxYuwbq4ZCHstQ8GrNBrOvIRkb7xhY17k/+RF6iJITF2KuoCJTA4dSdVrUMkoadrRJHDMRcBk5A4Nlsxek/TWl1c4ik/bEscCw4NW22TYIpGxr9lMDo2gXt95ExsIcpviV3vXmPNh8ARC; mal_cache_key=5cec156bdc1d2ab1c9c2fd945532d30b'
+                'Cookie': 'MALHLOGSESSID=1c7e8d5d7e89b2f4d1c5c11dc369191b; usprivacy=1NNY; m_gdpr_mdl_20230227=1; MALSESSIONID=2f9ot8fgp80j2c95v03fgbvtu3; is_logged_in=1; mal_cache_key=9d8cf934eee0a8712319521d61f6f257; aws-waf-token=f11ecc34-5e28-42bd-a667-035bd6f8b3c2:CgoAd9dmi+QHAAAA:VfXP67FHDoF67N8RLSPypIyfUqz6I5GwX3iv8mb1yfcpqPAysF2ohayk8J1vduWnPJYXYEVpAXoYGTfPMPtV/r7g/+F7Rjh6exmquCH1XlxjlYIuSDovqJA9YCIa/DyN9BDKHYVNrAHHUYkHR/WLIrMgKQBEFWVplNuwgwVw+DfAUQIq7VBHHHrVNKgmM07pH3gj729sS+Cjb+aA94OHZ71kEM+/EXJ/brsTam9dETT1Futij9pJP2NfEiHBsgDjP3UuybUJjQVQ'
             }
             req = requests.get(f'https://myanimelist.net/topanime.php?type=tv&limit={limit}', headers=headers)
             soup = BeautifulSoup(req.content, "html.parser")
@@ -52,7 +52,7 @@ def main():
                 for element in elements:
                     title = element.find("h3")
                     if title:
-                        thread = threading.Thread(target=parse_element, args=(title, headers, animes))
+                        thread = threading.Thread(target=parse_element, args=(element, headers, animes))
                         thread.start()
                         threads.append(thread)
                 
@@ -65,7 +65,7 @@ def main():
             limit += 50
             print(limit)
 
-            values = [(anime["title"], anime["link"], anime["image"], anime["genres"], anime["episodes"], anime["studios"], anime["status"]) for anime in animes]
+            values = [(anime["title"], anime["rank"], anime["link"], anime["image"], anime["genres"], anime["episodes"], anime["studios"], anime["status"]) for anime in animes]
 
             execute_values(cursor, insert_query, values)
 
@@ -82,7 +82,7 @@ def main():
     print("Elapsed time:", elapsed_time, "seconds")
     
 
-def parse_element(title, headers, animes):
+def parse_element(element, headers, animes):
     anime = {
         "title": None,
         "link": None,
@@ -91,7 +91,13 @@ def parse_element(title, headers, animes):
         "episodes": None,
         "studios": [],
         "status": None,
+        "rank": None,
     }
+
+    title = element.find("h3")
+
+    rank = element.find("span", class_="lightLink")
+    anime["rank"] = rank.text
 
     anchor = title.find("a")
     anime["title"] = anchor.text

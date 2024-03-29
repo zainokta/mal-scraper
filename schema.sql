@@ -1,6 +1,7 @@
 create table if not exists animes(
 	uuid uuid primary key default gen_random_uuid(),
 	title varchar(255) unique not null,
+	rank varchar(100) not null,
 	link varchar(255) not null,
 	image varchar(255) not null,
 	genres varchar[],
